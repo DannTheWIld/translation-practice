@@ -1,63 +1,67 @@
 import streamlit as st
-import sys
+import random
 
-# ANSI color codes
-BLACK = "\033[30m"  # Correct letters
-RED = "\033[31m"  # Incorrect letters
-GREEN = "\033[32m"  # Missing letters
-RESET = "\033[0m"  # Reset to default color
+# Define words
+english_words = ["Acquire", "Amateur", "Argument", "Faith", "Calendar", "Category", "Cemetery", "Changeable", "Collectibles", "Column", "Commitment", "Conscience", "Conscious", "Definite", "Discipline", "Solid", "Equipment", "Exaggerate", "Excellent", "Existence", "Experience", "Foreign", "Friend", "Grammar", "Harass", "Height", "Independence", "Indispensable", "Intelligence", "Jewelry", "Review", "Knowledge", "Contact", "License", "Maintenance", "Maneuver", "Millennium", "Misspelling", "Necessary", "Noticeable", "Occasion", "Preferred", "Endurance", "Privilege", "Public", "Receive", "Recommend"]
 
-points = 0  # Initialize points
+swedish_words = ["Få", "Amatör", "Argument", "Tro", "Kalender", "Kategori", "Kyrkogård", "Föränderlig", "Samlarobjekt", "Kolumn", "Engagemang", "Samvete", "Medveten", "Definitivt", "Disciplin", "Gensamt", "Utrustning", "Överdriva", "Utmärkt", "Existens", "Erfarenhet", "Utländsk", "Vän", "Grammatik", "Trakassera", "Höjd", "Oberoende", "Oumbärlig", "Intelligens", "Smycken", "Omdöme", "Kunskap", "Kontakt", "Licens", "Underhåll", "Manöver", "Millennium", "Felstavning", "Nödvändigt", "Märkbart", "Tillfälle", "Föredragen", "Uthållighet", "Privilegium", "Offentligt", "Ta emot", "Rekommendera"]
 
-theEWord = ["Acquire", "Amateur", "Argument", "Faith", "Calendar", "Category", "Cemetery", "Changeable", "Collectibles", "Column", "Commitment", "Conscience", "Conscious", "Definite", "Discipline", "Solid", "Equipment", "Exaggerate", "Excellent", "Existence", "Experience", "Foreign", "Friend", "Grammar", "Harass", "Height", "Independence", "Indispensable", "Intelligence", "Jewelry", "Review", "Knowledge", "Contact", "License", "Maintenance", "Maneuver", "Millennium", "Misspelling", "Necessary", "Noticeable", "Occasion", "Preferred", "Endurance", "Privilege", "Public", "Receive", "Recommend"]
-theSWord = ["Få", "Amatör", "Argument", "Tro", "Kalender", "Kategori", "Kyrkogård", "Föränderlig", "Samlarobjekt", "Kolumn", "Engagemang", "Samvete", "Medveten", "Definitivt", "Disciplin", "Gensamt", "Utrustning", "Överdriva", "Utmärkt", "Existens", "Erfarenhet", "Utländsk", "Vän", "Grammatik", "Trakassera", "Höjd", "Oberoende", "Oumbärlig", "Intelligens", "Smycken", "Omdöme", "Kunskap", "Kontakt", "Licens", "Underhåll", "Manöver", "Millennium", "Felstavning", "Nödvändigt", "Märkbart", "Tillfälle", "Föredragen", "Uthållighet", "Privilegium", "Offentligt", "Ta emot", "Rekommendera"]
+# Initialize session state variables
+if "restart" not in st.session_state:
+    st.session_state.restart = False
 
-length = len(theEWord)  # Get the length once, outside the function
+if "random_order" not in st.session_state:
+    st.session_state.random_order = False
 
-Input = input('Length? (1-10) 1 is the långest and 10 is the shortest: ').lower()  # Convert input to lowercase
-Input = int(Input)
-length = int(length / Input)
-print(f"Translate {length} words")  
+st.title("Swedish to English Translation Game")
 
-    
+# Difficulty slider
+difficulty = st.slider("Select Difficulty (1 = Longest, 10 = Shortest)", 1, 10, 5)
+num_words = max(1, len(english_words) // difficulty)
+st.write(f"Translate {num_words} words!")
 
-def getWord(num):
-    global eWord, sWord  # Declare global so it's accessible outside the function
-    eWord = theEWord[num].lower()  # Convert to lowercase
-    sWord = theSWord[num]
+# Random order toggle
+st.session_state.random_order = st.checkbox("Randomize word order", st.session_state.random_order)
 
-def highlight_differences(correct, user_input):
-    highlighted_text = ""
-    max_length = max(len(correct), len(user_input))
+# Restart game logic
+if "words" not in st.session_state or st.session_state.restart:
+    words = list(zip(english_words, swedish_words))
+    if st.session_state.random_order:
+        random.shuffle(words)
+    st.session_state.words = words[:num_words]
+    st.session_state.current_word_index = 0
+    st.session_state.points = 0
+    st.session_state.finished = False
+    st.session_state.restart = False  # Reset restart flag
 
-    for i in range(max_length):
-        if i < len(correct) and i < len(user_input):
-            if correct[i] == user_input[i]:  # ✅ Correct letter
-                highlighted_text += f"{BLACK}{correct[i]}{RESET}"
-            else:  # ❌ Wrong letter
-                highlighted_text += f"{RED}{user_input[i]}{RESET}"
-        elif i < len(correct):  # 🟩 Missing letter
-            highlighted_text += f"{GREEN}{correct[i]}{RESET}"
-        elif i < len(user_input):  # Extra letters (also red)
-            highlighted_text += f"{RED}{user_input[i]}{RESET}"
+# Get the current word
+if not st.session_state.finished:
+    eWord, sWord = st.session_state.words[st.session_state.current_word_index]
+    st.subheader(f"Translate: {sWord}")
 
-    return highlighted_text
+    user_input = st.text_input("Your answer:", "")
+    submit = st.button("Submit")
+    next_button = st.button("Next")
 
-def Translate():
-    global points  # Declare global so it can be modified inside the function
-    Input = input(f'Translate {sWord}: ').lower()  # Convert input to lowercase
+    if submit:
+        if user_input.lower() == eWord.lower():
+            st.session_state.points += 1
+            st.success("✅ Correct!")
+        else:
+            st.error(f"❌ Incorrect! Expected: {eWord}")
 
-    if Input == eWord:  
-        points += 1  
-        print(f"✅ Good! One point, total: {points}")  
-    else:
-        print(f"❌ Incorrect! Expected: '{eWord}'")
-        print("Your answer:  " + highlight_differences(eWord, Input))
+    # Move to the next word when "Next" is clicked
+    if next_button:
+        if st.session_state.current_word_index + 1 < num_words:
+            st.session_state.current_word_index += 1
+        else:
+            st.session_state.finished = True
 
-count = 0
-while count < length:  # Loops based on the number of words
-    getWord(count)  # Pass the current count to select different words
-    Translate()
-    count += 1  # Increment count
+# Show final results
+if st.session_state.finished:
+    st.write(f"🎉 Game over! You scored {st.session_state.points} out of {num_words}")
 
-print(f"🎉 Well done! You got {points} points out of {length}")
+# Restart button
+if st.button("Restart"):
+    st.session_state.restart = True
+    st.rerun()
